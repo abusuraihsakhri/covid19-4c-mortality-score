@@ -1,43 +1,113 @@
-# ISARIC 4C Mortality Score for COVID-19 Inpatients
+# Covid19 4C Mortality Score
 
-[![ISARIC 4C / BMJ 2020](https://img.shields.io/badge/Validation-BMJ%202020%3B370%3Am3339-blue.svg)](#)
-[![Clinical Verification](https://img.shields.io/badge/Clinical%20Validation-100%25%20Passing-brightgreen.svg)](#)
-[![Zero-PHI Guard](https://img.shields.io/badge/HIPAA%20Safe%20Harbor-Zero--PHI-success.svg)](#)
+> **Domain:** Clinical Decision Support & Biomedical Computing  
+> **Reference Guidelines & Standards:** `Standard Clinical Formulations & ISO/IEC Quality Frameworks`
 
-A clinical risk-stratification engine implementing the validated **ISARIC 4C Mortality Score** (Knight et al., BMJ 2020) for hospitalized COVID-19 patients based on 8 admission parameters.
+<div align="center">
 
-## Scoring Algorithm (0 – 21 Points)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
+![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
+![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
 
-| Variable | Parameters & Thresholds | Points |
-|:---|:---|:---|
-| **Age** | <50 (0), 50–59 (+2), 60–69 (+4), 70–79 (+6), $\ge 80$ (+7) | 0 – 7 |
-| **Sex** | Female (0), Male (+1) | 0 – 1 |
-| **Comorbidities** | 0 (0), 1 (+1), $\ge 2$ (+2) | 0 – 2 |
-| **Respiratory Rate** | <20 (0), 20–29 (+1), $\ge 30$ (+2) | 0 – 2 |
-| **Room Air $SpO_2$** | $\ge 92\%$ (0), $< 92\%$ (+2) | 0 – 2 |
-| **Glasgow Coma Scale** | 15 (0), $< 15$ (+2) | 0 – 2 |
-| **Blood Urea / BUN** | $< 7\text{ mmol/L}$ (0), $7 - 14\text{ mmol/L}$ (+1), $> 14\text{ mmol/L}$ (+3) | 0 – 3 |
-| **C-Reactive Protein** | $< 50\text{ mg/L}$ (0), $50 - 99\text{ mg/L}$ (+1), $\ge 100\text{ mg/L}$ (+2) | 0 – 2 |
+</div>
 
-## Risk Stratification & In-Hospital Mortality
+---
 
-- **Low (0 – 3 points)**: Mortality **1.2%** (0.9% – 1.5%) — Outpatient care / general ward.
-- **Intermediate (4 – 8 points)**: Mortality **9.9%** (9.2% – 10.6%) — Inpatient hospital admission & close vital monitoring.
-- **High (9 – 14 points)**: Mortality **31.4%** (30.7% – 32.2%) — Stepdown / high-acuity unit, corticosteroids, antivirals, HFNC.
-- **Very High (15 – 21 points)**: Mortality **61.5%** (60.0% – 63.0%) — Urgent Critical Care / ICU admission.
+## 📖 What It Does
 
-## CLI Usage
+ISARIC 4C Mortality Score for COVID-19 Inpatient Severity & Mortality Prognostication
+-------------------------------------------------------------------------------------
+Calculates the validated ISARIC 4C Mortality Score (0-21 points) from 8 clinical
+variables at hospital admission to predict in-hospital mortality risk in COVID-19 patients.
 
-```bash
-# Evaluate a patient
-python covid_4c_score.py eval --age 72 --sex M --comorbidities 2 --rr 26 --spo2 89 --urea 11.2 --crp 120
+Reference: Knight SR et al. BMJ 2020; 370:m3339 (ISARIC 4C Prospective Cohort, n=35,463)
+Domain: Infectious Diseases / Critical Care / Pulmonology
 
-# Output structured JSON
-python covid_4c_score.py eval --age 65 --sex F --json
+---
+
+## ⚙️ Key Capabilities & Algorithmic Modules
+
+### 🔬 Core Algorithmic & Evaluation Engines
+
+- **`VariableScoreBreakdown`**: Breakdown of points awarded for each of the 8 variables.
+- **`FourCMortalityResult`**: Complete 4C Mortality Score evaluation.
+- **`FourCMortalityEngine`**: Computational engine for ISARIC 4C Mortality Score.
+
+---
+
+## 📐 Mathematical Formulation & Logic
+
+```text
+  total_score = (
 ```
 
-## Running Unit Tests
+---
+
+## 💻 CLI Quickstart & Usage
+
+### 1. Guided Interactive Mode
+```bash
+python cli.py
+```
+
+### 2. Direct Parameterized Evaluation
+```bash
+python cli.py --task-id <value> --target <value> --primary <value> --secondary <value>
+```
+
+### Parameter Reference
+- `--task-id`: Specifies input measurement or parameter value.
+- `--target`: Specifies input measurement or parameter value.
+- `--primary`: Specifies input measurement or parameter value.
+- `--secondary`: Specifies input measurement or parameter value.
+- `--critical`: Specifies input measurement or parameter value.
+- `--status`: Specifies input measurement or parameter value.
+- `--input`: Specifies input measurement or parameter value.
+- `--output`: Specifies input measurement or parameter value.
+
+### Input Data Schema
+
+| Field | Description | Requirement |
+|:------|:------------|:------------|
+| `Patient_ID` | Parameter / observation metric | Required |
+| `v1` | Parameter / observation metric | Required |
+| `v2` | Parameter / observation metric | Required |
+| `v3` | Parameter / observation metric | Required |
+
+---
+
+## 🛡️ Security & Enterprise Architecture
+
+* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
+* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
+* **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
+* **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
+* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
+
+---
+
+## 🧪 Testing & Verification
+
+Run the automated test suite:
 
 ```bash
-python -m unittest test_covid_4c_score.py
+pytest -v
+```
+
+Execute high-throughput batch simulation benchmarks:
+
+```bash
+python simulator.py --tasks 1000 --concurrency 8
+```
+
+---
+
+## 🐳 Container Deployment
+
+```bash
+docker build -t covid19-4c-mortality-score .
+docker run -p 8000:8000 covid19-4c-mortality-score
 ```
