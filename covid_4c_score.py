@@ -51,6 +51,43 @@ class FourCMortalityResult:
         return json.dumps(self.to_dict(), indent=indent)
 
 
+class ValidationError(Exception):
+    """Raised when input parameters are outside clinically valid ranges."""
+    pass
+
+
+def _validate_inputs(
+    age_years: int,
+    sex: str,
+    comorbidities_count: int,
+    respiratory_rate: int,
+    spo2_percent: float,
+    gcs_score: int,
+    urea_mmol_l: Optional[float],
+    bun_mg_dl: Optional[float],
+    crp_mg_l: float,
+) -> None:
+    """Validate all input parameters are within clinically plausible ranges."""
+    if not isinstance(age_years, int) or age_years < 0 or age_years > 150:
+        raise ValidationError(f"Age must be an integer between 0 and 150, got {age_years}")
+    if not isinstance(comorbidities_count, int) or comorbidities_count < 0:
+        raise ValidationError(f"Comorbidities count must be a non-negative integer, got {comorbidities_count}")
+    if not isinstance(respiratory_rate, int) or respiratory_rate < 0 or respiratory_rate > 100:
+        raise ValidationError(f"Respiratory rate must be between 0 and 100, got {respiratory_rate}")
+    if not isinstance(spo2_percent, (int, float)) or spo2_percent < 0 or spo2_percent > 100:
+        raise ValidationError(f"SpO2 must be between 0 and 100, got {spo2_percent}")
+    if not isinstance(gcs_score, int) or gcs_score < 3 or gcs_score > 15:
+        raise ValidationError(f"GCS must be between 3 and 15, got {gcs_score}")
+    if urea_mmol_l is not None and (not isinstance(urea_mmol_l, (int, float)) or urea_mmol_l < 0):
+        raise ValidationError(f"Urea must be a non-negative number, got {urea_mmol_l}")
+    if bun_mg_dl is not None and (not isinstance(bun_mg_dl, (int, float)) or bun_mg_dl < 0):
+        raise ValidationError(f"BUN must be a non-negative number, got {bun_mg_dl}")
+    if not isinstance(crp_mg_l, (int, float)) or crp_mg_l < 0:
+        raise ValidationError(f"CRP must be a non-negative number, got {crp_mg_l}")
+    if sex is None or str(sex).strip() == "":
+        raise ValidationError("Sex must be specified (M/F/Male/Female)")
+
+
 class FourCMortalityEngine:
     """Computational engine for ISARIC 4C Mortality Score."""
 
@@ -155,6 +192,17 @@ class FourCMortalityEngine:
         crp_mg_l: float = 20.0,
     ) -> FourCMortalityResult:
         """Evaluate full ISARIC 4C Mortality Score."""
+        _validate_inputs(
+            age_years=age_years,
+            sex=sex,
+            comorbidities_count=comorbidities_count,
+            respiratory_rate=respiratory_rate,
+            spo2_percent=spo2_percent,
+            gcs_score=gcs_score,
+            urea_mmol_l=urea_mmol_l,
+            bun_mg_dl=bun_mg_dl,
+            crp_mg_l=crp_mg_l,
+        )
         factors = []
 
         pts_age, desc = cls.score_age(age_years)

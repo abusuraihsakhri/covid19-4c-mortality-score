@@ -7,8 +7,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - AUDIT_SECRET_KEY=covid19-4c-mortality-score-prod-audit-key-2026
-      - MODEL_PROVIDER=mock
+      - AUDIT_SECRET_KEY=${AUDIT_SECRET_KEY:-change-me-in-production}
+      - MODEL_PROVIDER=${MODEL_PROVIDER:-mock}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

@@ -1,7 +1,6 @@
 """
 Prometheus Operational Metrics Exporter for covid19-4c-mortality-score.
 """
-import time
 from typing import Dict, Any
 
 class SystemMetricsCollector:

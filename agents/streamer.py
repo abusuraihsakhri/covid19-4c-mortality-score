@@ -2,7 +2,6 @@
 Live WebSocket Distributed Component Telemetry Streamer for covid19-4c-mortality-score.
 """
 import json
-import asyncio
 from typing import List, Dict, Any
 
 class TelemetryBroadcaster:

@@ -10,6 +10,7 @@ from covid_4c_score import (
     FourCMortalityEngine,
     FourCMortalityResult,
     VariableScoreBreakdown,
+    ValidationError,
     main,
 )
 
@@ -172,6 +173,112 @@ class TestEndToEndAndCLI(unittest.TestCase):
 
     def test_cli_chat_command(self):
         self.assertEqual(main(["chat", "What", "are", "the", "variables?"]), 0)
+
+    def test_cli_batch_command(self):
+        import tempfile, os
+        # Create a temporary CSV file with proper headers
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+            f.write("patient_id,age,sex,comorbidities,rr,spo2,gcs,urea,bun,crp\n")
+            f.write("PT-T1,65,M,1,22,94.0,15,8.5,,45.0\n")
+            f.write("PT-T2,78,F,2,28,89.0,13,12.0,,120.0\n")
+            tmp_path = f.name
+        try:
+            self.assertEqual(main(["batch", "-i", tmp_path, "-o", "test_output.csv"]), 0)
+            self.assertTrue(os.path.exists("test_output.csv"))
+        finally:
+            os.unlink(tmp_path)
+            if os.path.exists("test_output.csv"):
+                os.unlink("test_output.csv")
+
+
+class TestInputValidation(unittest.TestCase):
+    """Test suite for input validation and edge cases."""
+
+    def test_valid_inputs_accepted(self):
+        """Normal valid inputs should not raise."""
+        res = FourCMortalityEngine.evaluate(age_years=55, sex="M", comorbidities_count=1)
+        self.assertIsInstance(res, FourCMortalityResult)
+
+    def test_invalid_age_negative(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(age_years=-5)
+
+    def test_invalid_age_too_high(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(age_years=200)
+
+    def test_invalid_comorbidities_negative(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(comorbidities_count=-1)
+
+    def test_invalid_respiratory_rate_negative(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(respiratory_rate=-5)
+
+    def test_invalid_respiratory_rate_too_high(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(respiratory_rate=150)
+
+    def test_invalid_spo2_negative(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(spo2_percent=-10.0)
+
+    def test_invalid_spo2_above_100(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(spo2_percent=105.0)
+
+    def test_invalid_gcs_below_range(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(gcs_score=2)
+
+    def test_invalid_gcs_above_range(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(gcs_score=16)
+
+    def test_invalid_urea_negative(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(urea_mmol_l=-5.0)
+
+    def test_invalid_bun_negative(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(bun_mg_dl=-10.0)
+
+    def test_invalid_crp_negative(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(crp_mg_l=-20.0)
+
+    def test_invalid_sex_empty(self):
+        with self.assertRaises(ValidationError):
+            FourCMortalityEngine.evaluate(sex="")
+
+    def test_boundary_age_zero(self):
+        """Age 0 (neonatal edge case) should be accepted."""
+        res = FourCMortalityEngine.evaluate(age_years=0, sex="F")
+        self.assertEqual(res.total_score, 0)
+        self.assertEqual(res.score_breakdown.age_points, 0)
+
+    def test_boundary_spo2_exactly_92(self):
+        """SpO2 exactly 92% should score 0 points."""
+        res = FourCMortalityEngine.evaluate(spo2_percent=92.0)
+        self.assertEqual(res.score_breakdown.oxygen_saturation_points, 0)
+
+    def test_boundary_gcs_exactly_15(self):
+        """GCS exactly 15 should score 0 points."""
+        res = FourCMortalityEngine.evaluate(gcs_score=15)
+        self.assertEqual(res.score_breakdown.gcs_points, 0)
+
+    def test_score_breakdown_matches_total(self):
+        """Verify that the sum of breakdown points equals total_score."""
+        res = FourCMortalityEngine.evaluate(
+            age_years=75, sex="M", comorbidities_count=2,
+            respiratory_rate=30, spo2_percent=88.0, gcs_score=13,
+            urea_mmol_l=15.0, crp_mg_l=150.0
+        )
+        bd = res.score_breakdown
+        expected_total = (bd.age_points + bd.sex_points + bd.comorbidities_points +
+                          bd.respiratory_rate_points + bd.oxygen_saturation_points +
+                          bd.gcs_points + bd.urea_points + bd.crp_points)
+        self.assertEqual(res.total_score, expected_total)
 
 
 if __name__ == "__main__":
