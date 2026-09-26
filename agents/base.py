@@ -12,7 +12,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 
-PHI_PATTERNS = [
+# Best-effort identifier screening only; this is not a HIPAA de-identification guarantee.\nPHI_PATTERNS = [
     re.compile(r"\b(?:MRN|mrn)[:#\s-]*\d{4,10}\b", re.IGNORECASE),
     re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
     re.compile(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"),
@@ -58,17 +58,26 @@ class AuditTrail:
     """Cryptographic Tamper-Evident HMAC-SHA256 Audit Trail."""
     def __init__(self, secret_key: Optional[str] = None):
         resolved_key = secret_key or os.getenv("AUDIT_SECRET_KEY")
-        if not resolved_key:
+        if resolved_key:
+            self.secret_key = resolved_key.encode("utf-8")
+        else:
             import warnings
             warnings.warn(
-                "AUDIT_SECRET_KEY not set. Using development fallback. "
-                "Set AUDIT_SECRET_KEY env var in production.",
+                "AUDIT_SECRET_KEY not set. Using an ephemeral key for this process; "
+                "set AUDIT_SECRET_KEY for persistent audit verification.",
                 RuntimeWarning,
                 stacklevel=2,
             )
-            resolved_key = "DEV-KEY-CHANGE-ME-IN-PRODUCTION"
-        self.secret_key = resolved_key.encode("utf-8")
+            self.secret_key = secrets.token_bytes(32)
         self.logs: List[Dict[str, Any]] = []
+
+    def _signature_for(self, entry: Dict[str, Any]) -> str:
+        sign_string = (
+            f"{entry['audit_id']}|{entry['timestamp']}|{entry['actor']}|"
+            f"{entry['actor_tier']}|{entry['event_type']}|{entry['payload_hash']}|"
+            f"{entry['prev_hash']}"
+        )
+        return hmac.new(self.secret_key, sign_string.encode("utf-8"), hashlib.sha256).hexdigest()
 
     def log(self, actor: str, actor_tier: str, event_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
         payload_str = json.dumps(details, sort_keys=True)
@@ -90,17 +99,29 @@ class AuditTrail:
             "current_hash": signature,
         }
         self.logs.append(entry)
-        return entry
+        return copy.deepcopy(entry)
 
     def verify_integrity(self) -> bool:
+        required = {
+            "audit_id", "timestamp", "actor", "actor_tier", "event_type",
+            "payload_hash", "prev_hash", "current_hash",
+        }
         for i, entry in enumerate(self.logs):
-            prev = self.logs[i-1]["current_hash"] if i > 0 else "GENESIS_BLOCK_0000000000000000"
-            if entry["prev_hash"] != prev:
+            if not required.issubset(entry):
+                return False
+            expected_prev = (
+                self.logs[i - 1]["current_hash"]
+                if i > 0
+                else "GENESIS_BLOCK_0000000000000000"
+            )
+            if entry["prev_hash"] != expected_prev:
+                return False
+            if not hmac.compare_digest(entry["current_hash"], self._signature_for(entry)):
                 return False
         return True
 
     def get_trail(self) -> List[Dict[str, Any]]:
-        return self.logs
+        return copy.deepcopy(self.logs)
 
 
 GLOBAL_AUDIT = AuditTrail()
