@@ -1,236 +1,313 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Covid19 4C Mortality Score — Operations Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #090d16;
-            --card: #111827;
-            --border: #1f293d;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            padding: 2rem;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .header-title h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
-        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
-        .badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 1.5rem;
-        }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-        input, select, textarea {
-            width: 100%;
-            padding: 0.65rem 0.9rem;
-            background: #0d1322;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-        .btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 0.7rem 1.4rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .btn:hover { background: #2563eb; }
-        .terminal {
-            background: #060911;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #10b981;
-            height: 380px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .metrics-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .metric-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-        .metric-val { font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 0.25rem; }
-        .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Client-side ISARIC 4C Mortality Score calculator for adults admitted with COVID-19.">
+  <title>ISARIC 4C Mortality Score</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --text: #172033;
+      --muted: #5c6678;
+      --border: #cfd6e1;
+      --accent: #185abd;
+      --accent-contrast: #ffffff;
+      --focus: #8ab4f8;
+      --note: #eef4ff;
+      --error: #9d1c20;
+      --error-bg: #fff0f0;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f141c;
+        --surface: #171d27;
+        --text: #eef3fb;
+        --muted: #aeb8c8;
+        --border: #3a4556;
+        --accent: #8ab4f8;
+        --accent-contrast: #08111f;
+        --focus: #b7d1ff;
+        --note: #17263e;
+        --error: #ffb4ab;
+        --error-bg: #3b1d1d;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    main { width: min(1080px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 3rem; }
+    header { margin-bottom: 1.5rem; }
+    h1 { margin: 0 0 .35rem; font-size: clamp(1.65rem, 4vw, 2.35rem); }
+    h2 { margin-top: 0; font-size: 1.15rem; }
+    p { margin: .45rem 0; }
+    .muted { color: var(--muted); }
+    .notice {
+      padding: .9rem 1rem;
+      border: 1px solid var(--border);
+      background: var(--note);
+      border-radius: .7rem;
+      margin: 1rem 0 1.5rem;
+    }
+    .layout { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: .8rem;
+      padding: 1.25rem;
+    }
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem 1rem; }
+    .field.full { grid-column: 1 / -1; }
+    label { display: block; font-weight: 650; margin-bottom: .3rem; }
+    input, select, button {
+      width: 100%;
+      min-height: 2.75rem;
+      font: inherit;
+      border-radius: .45rem;
+      border: 1px solid var(--border);
+    }
+    input, select { padding: .55rem .65rem; background: var(--surface); color: var(--text); }
+    input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+    .actions { display: flex; gap: .7rem; margin-top: 1rem; }
+    button { border: 0; padding: .6rem .9rem; font-weight: 700; cursor: pointer; }
+    button[type="submit"] { background: var(--accent); color: var(--accent-contrast); }
+    button[type="reset"] { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .error { color: var(--error); background: var(--error-bg); padding: .75rem; border-radius: .45rem; margin-top: 1rem; }
+    .result-empty { color: var(--muted); }
+    .score { font-size: 2.6rem; font-weight: 800; line-height: 1; margin: .4rem 0; }
+    .risk { font-size: 1.2rem; font-weight: 750; }
+    dl { display: grid; grid-template-columns: 1fr auto; gap: .45rem 1rem; margin: 1rem 0 0; }
+    dt { color: var(--muted); }
+    dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 650; }
+    .breakdown { margin-top: 1.25rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    th, td { padding: .45rem .35rem; border-bottom: 1px solid var(--border); text-align: left; }
+    th:last-child, td:last-child { text-align: right; }
+    footer { margin-top: 1.5rem; color: var(--muted); font-size: .88rem; }
+    a { color: var(--accent); }
+    @media (max-width: 760px) {
+      .layout, .fields { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      main { width: min(100% - 1rem, 1080px); padding-top: 1rem; }
+      .actions { flex-direction: column; }
+    }
+  </style>
 </head>
 <body>
+<main>
+  <header>
+    <h1>ISARIC 4C Mortality Score</h1>
+    <p class="muted">For adults admitted to hospital with COVID-19; score range 0–21.</p>
+  </header>
 
-    <div class="header">
-        <div class="header-title">
-            <h1>Covid19 4C Mortality Score</h1>
-            <p>Domain: Clinical & Cryptographic AI | Standard: CAP / CLSI / NIST Standards | LabMind-Atlas Architecture</p>
-        </div>
-        <div>
-            <span class="badge">Air-Gapped Active</span>
-            <span class="badge" style="background: rgba(16,185,129,0.2); color: #10b981; border-color: #10b981;">Zero-PHI Guard Active</span>
-        </div>
-    </div>
+  <div class="notice">
+    <strong>Clinical context:</strong> the displayed mortality percentages are historical estimates from the
+    2020 ISARIC validation cohort. This calculator is prognostic support and must not be used alone to determine
+    treatment, escalation, or disposition. Calculations run entirely in this browser; no entered values are sent
+    anywhere by this page.
+  </div>
 
-    <div class="metrics-bar">
-        <div class="metric-box">
-            <div class="metric-label">System Status</div>
-            <div class="metric-val" style="color: var(--success);" id="m-status">OPTIMAL</div>
+  <div class="layout">
+    <section class="card" aria-labelledby="input-title">
+      <h2 id="input-title">Admission variables</h2>
+      <form id="score-form" novalidate>
+        <div class="fields">
+          <div class="field">
+            <label for="age">Age (years)</label>
+            <input id="age" name="age" type="number" min="18" max="150" step="1" required value="65">
+          </div>
+          <div class="field">
+            <label for="sex">Sex in original score</label>
+            <select id="sex" name="sex" required>
+              <option value="F">Female</option>
+              <option value="M" selected>Male</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="comorbidities">Comorbidities (count)</label>
+            <input id="comorbidities" name="comorbidities" type="number" min="0" step="1" required value="1">
+          </div>
+          <div class="field">
+            <label for="rr">Respiratory rate (/min)</label>
+            <input id="rr" name="rr" type="number" min="1" max="100" step="1" required value="24">
+          </div>
+          <div class="field">
+            <label for="spo2">Room-air SpO₂ (%)</label>
+            <input id="spo2" name="spo2" type="number" min="0.1" max="100" step="0.1" required value="90">
+          </div>
+          <div class="field">
+            <label for="gcs">Glasgow Coma Scale</label>
+            <input id="gcs" name="gcs" type="number" min="3" max="15" step="1" required value="15">
+          </div>
+          <div class="field">
+            <label for="urea-unit">Urea measurement</label>
+            <select id="urea-unit" name="urea-unit">
+              <option value="urea">Urea (mmol/L)</option>
+              <option value="bun">BUN (mg/dL)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="urea-value" id="urea-label">Urea (mmol/L)</label>
+            <input id="urea-value" name="urea-value" type="number" min="0" step="0.1" required value="8">
+          </div>
+          <div class="field full">
+            <label for="crp">C-reactive protein (mg/L)</label>
+            <input id="crp" name="crp" type="number" min="0" step="0.1" required value="120">
+          </div>
         </div>
-        <div class="metric-box">
-            <div class="metric-label">Tasks Processed</div>
-            <div class="metric-val" id="m-tasks">142</div>
+        <div class="actions">
+          <button type="submit">Calculate score</button>
+          <button type="reset">Reset</button>
         </div>
-        <div class="metric-box">
-            <div class="metric-label">Audit Blocks Signed</div>
-            <div class="metric-val" id="m-audit">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">PHI Interceptions</div>
-            <div class="metric-val" style="color: var(--accent);" id="m-phi">0</div>
-        </div>
-    </div>
+        <div id="error" class="error" role="alert" hidden></div>
+      </form>
+    </section>
 
-    <div class="grid">
-        <div class="card">
-            <h2>⚙️ Dispatch Distributed Component Audit</h2>
-            <div class="form-group">
-                <label>Task / Sample ID</label>
-                <input type="text" id="task_id" value="TASK-2026-LIVE-01">
-            </div>
-            <div class="form-group">
-                <label>Target Identifier</label>
-                <input type="text" id="target_id" value="SPECIMEN-ALPHA-77">
-            </div>
-            <div class="form-group">
-                <label>Primary Measurement / Value</label>
-                <input type="number" id="primary_metric" value="29.4" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Secondary Metric / Kinetic Index</label>
-                <input type="number" id="secondary_metric" value="14.8" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Status / Phenotype Descriptor</label>
-                <input type="text" id="status_descriptor" value="DISCORDANT_ANOMALY">
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="is_critical" checked> Trigger Emergency / Critical Flag</label>
-            </div>
-            <button class="btn" onclick="runAudit()">Execute Distributed Component Audit</button>
-        </div>
+    <section class="card" aria-labelledby="result-title">
+      <h2 id="result-title">Result</h2>
+      <div id="result" class="result-empty" aria-live="polite">
+        Enter all eight variables and select <strong>Calculate score</strong>.
+      </div>
+    </section>
+  </div>
 
-        <div class="card">
-            <h2>📊 Real-Time Consensus Dossier & Audit Log</h2>
-            <div class="terminal" id="outputConsole">// Covid19 4C Mortality Score Operations Console Ready
-// Connection established with Air-Gapped Supervisor
-// Cryptographic HMAC-SHA256 audit ledger loaded.
-// Ready for live task payload dispatch...</div>
-        </div>
-    </div>
+  <footer>
+    <p>
+      Reference: Knight SR et al. <em>BMJ</em> 2020;370:m3339.
+      <a href="https://doi.org/10.1136/bmj.m3339" rel="noopener noreferrer">doi:10.1136/bmj.m3339</a>
+    </p>
+  </footer>
+</main>
 
-    <script>
-        async function runAudit() {
-            const consoleEl = document.getElementById('outputConsole');
-            consoleEl.innerText = "// Dispatching task across specialized workers...
-// Invoking InvariantQCWorker, SafetyEscalationWorker, ProtocolWorker...";
+<script>
+(() => {
+  "use strict";
 
-            const payload = {
-                task_id: document.getElementById('task_id').value,
-                target_identifier: document.getElementById('target_id').value,
-                primary_metric: parseFloat(document.getElementById('primary_metric').value),
-                secondary_metric: parseFloat(document.getElementById('secondary_metric').value),
-                status_descriptor: document.getElementById('status_descriptor').value,
-                is_critical_flag: document.getElementById('is_critical').checked
-            };
+  const form = document.getElementById("score-form");
+  const result = document.getElementById("result");
+  const error = document.getElementById("error");
+  const ureaUnit = document.getElementById("urea-unit");
+  const ureaLabel = document.getElementById("urea-label");
 
-            try {
-                const res = await fetch('/api/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                consoleEl.innerText = JSON.stringify(data, null, 2);
-                document.getElementById('m-tasks').innerText = parseInt(document.getElementById('m-tasks').innerText) + 1;
-                document.getElementById('m-audit').innerText = parseInt(document.getElementById('m-audit').innerText) + 1;
-            } catch (err) {
-                consoleEl.innerText = "// Offline / Simulation Output:\n" + JSON.stringify({
-                    dossier_id: "DOSSIER-SIM-" + Math.floor(Math.random()*10000),
-                    system: "covid19-4c-mortality-score",
-                    domain: "Clinical & Cryptographic AI",
-                    task_id: payload.task_id,
-                    overall_urgency: payload.is_critical_flag ? "CRITICAL_STAT_PANIC" : "ELEVATED_RISK",
-                    integrity_status: "DISCORDANT_ANOMALY",
-                    alerts: [
-                        { worker: "InvariantQCWorker", alert: "Primary metric exceeds upper reference bound" },
-                        { worker: "SafetyEscalationWorker", alert: "Critical emergency interlock flag active" }
-                    ],
-                    audit_hash: "HMAC_SHA256_e83f9a72b941d6c381f9"
-                }, null, 2);
-            }
-        }
-    </script>
+  function finiteNumber(id) {
+    const field = document.getElementById(id);
+    const value = Number(field.value);
+    if (!Number.isFinite(value)) throw new Error(`${field.previousElementSibling?.textContent || id} must be a finite number.`);
+    return value;
+  }
+
+  function integerNumber(id) {
+    const value = finiteNumber(id);
+    if (!Number.isInteger(value)) throw new Error("Age, comorbidity count, respiratory rate, and GCS must be whole numbers.");
+    return value;
+  }
+
+  function validate(v) {
+    if (v.age < 18 || v.age > 150) throw new Error("Age must be 18–150 years; the score was validated in adults.");
+    if (v.comorbidities < 0) throw new Error("Comorbidity count cannot be negative.");
+    if (v.rr < 1 || v.rr > 100) throw new Error("Respiratory rate must be 1–100 breaths/min.");
+    if (v.spo2 <= 0 || v.spo2 > 100) throw new Error("SpO₂ must be >0% and ≤100%.");
+    if (v.gcs < 3 || v.gcs > 15) throw new Error("GCS must be 3–15.");
+    if (v.ureaValue < 0) throw new Error("Urea/BUN cannot be negative.");
+    if (v.crp < 0) throw new Error("CRP cannot be negative.");
+  }
+
+  function score(v) {
+    const urea = v.ureaUnit === "bun" ? v.ureaValue / 2.801 : v.ureaValue;
+    const points = {
+      Age: v.age < 50 ? 0 : v.age < 60 ? 2 : v.age < 70 ? 4 : v.age < 80 ? 6 : 7,
+      Sex: v.sex === "M" ? 1 : 0,
+      Comorbidities: v.comorbidities === 0 ? 0 : v.comorbidities === 1 ? 1 : 2,
+      "Respiratory rate": v.rr < 20 ? 0 : v.rr < 30 ? 1 : 2,
+      "Room-air SpO₂": v.spo2 < 92 ? 2 : 0,
+      GCS: v.gcs < 15 ? 2 : 0,
+      Urea: urea < 7 ? 0 : urea <= 14 ? 1 : 3,
+      CRP: v.crp < 50 ? 0 : v.crp < 100 ? 1 : 2
+    };
+    const total = Object.values(points).reduce((a, b) => a + b, 0);
+    let risk, mortality;
+    if (total <= 3) [risk, mortality] = ["Low", 1.2];
+    else if (total <= 8) [risk, mortality] = ["Intermediate", 9.9];
+    else if (total <= 14) [risk, mortality] = ["High", 31.4];
+    else [risk, mortality] = ["Very High", 61.5];
+    return { total, risk, mortality, points, urea };
+  }
+
+  function render(scored, v) {
+    const rows = Object.entries(scored.points)
+      .map(([name, pts]) => `<tr><td>${name}</td><td>${pts}</td></tr>`).join("");
+    const conversion = v.ureaUnit === "bun"
+      ? `<p class="muted">BUN converted to urea: ${scored.urea.toFixed(2)} mmol/L.</p>`
+      : "";
+    result.className = "";
+    result.innerHTML = `
+      <div class="score">${scored.total}<span class="muted" style="font-size:1rem;font-weight:600"> / 21</span></div>
+      <div class="risk">${scored.risk} risk stratum</div>
+      <dl>
+        <dt>2020 validation-cohort mortality</dt><dd>${scored.mortality.toFixed(1)}%</dd>
+      </dl>
+      ${conversion}
+      <div class="breakdown">
+        <h2>Point breakdown</h2>
+        <table>
+          <thead><tr><th>Variable</th><th>Points</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p class="muted" style="margin-top:1rem">Interpret with the complete clinical context and current guidance.</p>
+    `;
+  }
+
+  ureaUnit.addEventListener("change", () => {
+    ureaLabel.textContent = ureaUnit.value === "bun" ? "BUN (mg/dL)" : "Urea (mmol/L)";
+  });
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    error.hidden = true;
+    try {
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+      const values = {
+        age: integerNumber("age"),
+        sex: document.getElementById("sex").value,
+        comorbidities: integerNumber("comorbidities"),
+        rr: integerNumber("rr"),
+        spo2: finiteNumber("spo2"),
+        gcs: integerNumber("gcs"),
+        ureaUnit: ureaUnit.value,
+        ureaValue: finiteNumber("urea-value"),
+        crp: finiteNumber("crp")
+      };
+      validate(values);
+      render(score(values), values);
+    } catch (err) {
+      error.textContent = err instanceof Error ? err.message : String(err);
+      error.hidden = false;
+    }
+  });
+
+  form.addEventListener("reset", () => {
+    window.setTimeout(() => {
+      ureaLabel.textContent = "Urea (mmol/L)";
+      error.hidden = true;
+      result.className = "result-empty";
+      result.innerHTML = "Enter all eight variables and select <strong>Calculate score</strong>.";
+    }, 0);
+  });
+})();
+</script>
 </body>
 </html>
