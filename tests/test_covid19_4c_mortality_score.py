@@ -12,7 +12,7 @@ from agents.base import PHIGuard, AuditLogger, AuditTrail, SecurityException
 from agents.models import SystemTaskPayload, UrgencyLevel, SystemIntegrityStatus
 from agents.workers import InvariantQCWorker, SafetyEscalationWorker, ProtocolConformanceWorker
 from agents.supervisor import SystemSupervisor
-from cli import main
+from cli import _parse_bool, main
 
 
 def test_phi_guard_enforcement():
@@ -116,3 +116,11 @@ def test_score_api_requires_one_urea_source():
     payload["urea_mmol_l"] = 8.0
     payload["bun_mg_dl"] = 20.0
     assert client.post("/api/score", json=payload).status_code == 422
+
+
+def test_legacy_batch_boolean_parser():
+    assert _parse_bool("true") is True
+    assert _parse_bool("false") is False
+    assert _parse_bool("0") is False
+    with pytest.raises(ValueError):
+        _parse_bool("maybe")
