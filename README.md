@@ -1,5 +1,7 @@
 # COVID-19 4C Mortality Score
 
+### [Open the Live Application →](https://abusuraihsakhri.github.io/covid19-4c-mortality-score/)
+
 A reproducible implementation of the ISARIC 4C Mortality Score described by Knight et al. for **adults admitted to hospital with COVID-19**. The repository provides a Python scoring library, CLI, batch CSV processing, FastAPI endpoint, tests, and a dependency-free browser calculator.
 
 ## Scope
@@ -32,7 +34,7 @@ The static calculator is in `docs/` (with the same interface retained in `web/`)
 - The page is responsive and keyboard accessible.
 - Urea can be entered directly in mmol/L or as BUN in mg/dL.
 
-GitHub Pages deployment is automated from `docs/`. A live application link is added here only after the deployed site has been verified.
+GitHub Pages deploys this interface from `docs/`.
 
 ## Python installation
 
