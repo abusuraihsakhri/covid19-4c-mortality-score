@@ -1,7 +1,3 @@
-"""
-Covid19 4C Mortality Score — Enterprise Automated Analytical Suite.
-Domain: Clinical & Biomedical AI
-Standard: CAP / CLSI / ISO Standards
+"""Legacy orchestration package retained for backward compatibility."""
 
-"""
-__version__ = "3.0.0-ENTERPRISE"
+__version__ = "1.1.0"

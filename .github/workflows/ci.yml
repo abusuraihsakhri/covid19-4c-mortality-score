@@ -1,40 +1,87 @@
-name: Covid19 4C Mortality Score CI/CD & Security Verification
+name: CI
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [master, main]
   pull_request:
-    branches: [ master, main ]
+    branches: [master, main]
+
+permissions:
+  contents: read
 
 jobs:
-  test-and-audit:
+  test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install fastapi uvicorn pydantic pytest
+      - name: Install project and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
 
-    - name: Run Pytest Suite
-      run: |
-        pytest -v
+      - name: Compile
+        run: python -m compileall -q .
 
-    - name: Security SAST & Zero-PHI Audit
-      run: |
-        python -c "
-        from agents.base import PHIGuard, AuditLogger
-        import pytest
-        assert AuditLogger.verify_integrity() is True
-        print('Security & Zero-PHI Audit Passed!')
-        "
+      - name: Lint for runtime errors
+        run: ruff check .
+
+      - name: Test
+        env:
+          AUDIT_SECRET_KEY: ci-test-key
+        run: pytest -q
+
+      - name: CLI smoke test
+        run: >-
+          covid19-4c-score eval --age 65 --sex M --comorbidities 1
+          --rr 24 --spo2 90 --gcs 15 --urea 8 --crp 120 --json
+
+  security-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install project and verification tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Audit dependencies
+        run: pip-audit
+
+      - name: Build package
+        run: python -m build
+
+      - name: Build runtime container
+        run: docker build -t covid19-4c-mortality-score:ci .
+
+      - name: Container health smoke test
+        run: |
+          docker run -d --name fourc-ci -p 8000:8000 \
+            -e AUDIT_SECRET_KEY=ci-test-key covid19-4c-mortality-score:ci
+          trap 'docker rm -f fourc-ci >/dev/null 2>&1 || true' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8000/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs fourc-ci
+          exit 1

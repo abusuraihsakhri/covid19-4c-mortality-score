@@ -8,11 +8,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
-from agents.base import PHIGuard, AuditLogger, SecurityException
+from fastapi.testclient import TestClient
+from agents.base import PHIGuard, AuditLogger, AuditTrail, SecurityException
 from agents.models import SystemTaskPayload, UrgencyLevel, SystemIntegrityStatus
 from agents.workers import InvariantQCWorker, SafetyEscalationWorker, ProtocolConformanceWorker
 from agents.supervisor import SystemSupervisor
-from cli import main
+from cli import _parse_bool, main
+from agents.api import app
 
 
 def test_phi_guard_enforcement():
@@ -63,3 +65,64 @@ def test_supervisor_consensus_and_audit():
     assert main(["audit", "--task-id", "CLI-TEST-01"]) == 0
     assert main(["chat", "Explain", "specifications"]) == 0
     assert main(["verify-audit"]) == 0
+
+
+def test_audit_trail_detects_tampering_and_returns_copy():
+    trail = AuditTrail("test-secret")
+    trail.log("worker", "test", "FIRST", {"value": 1})
+    trail.log("worker", "test", "SECOND", {"value": 2})
+    assert trail.verify_integrity() is True
+
+    exported = trail.get_trail()
+    exported[0]["actor"] = "external-mutation"
+    assert trail.verify_integrity() is True
+
+    trail.logs[-1]["actor"] = "tampered"
+    assert trail.verify_integrity() is False
+
+
+def test_score_api_calculates_complete_case():
+    client = TestClient(app)
+    response = client.post(
+        "/api/score",
+        json={
+            "patient_id": "API-01",
+            "age_years": 65,
+            "sex": "M",
+            "comorbidities_count": 1,
+            "respiratory_rate": 24,
+            "spo2_percent": 90.0,
+            "gcs_score": 15,
+            "urea_mmol_l": 8.0,
+            "crp_mg_l": 120.0,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total_score"] == 12
+    assert body["risk_group"] == "High"
+
+
+def test_score_api_requires_one_urea_source():
+    client = TestClient(app)
+    payload = {
+        "age_years": 65,
+        "sex": "M",
+        "comorbidities_count": 1,
+        "respiratory_rate": 24,
+        "spo2_percent": 90.0,
+        "gcs_score": 15,
+        "crp_mg_l": 120.0,
+    }
+    assert client.post("/api/score", json=payload).status_code == 422
+    payload["urea_mmol_l"] = 8.0
+    payload["bun_mg_dl"] = 20.0
+    assert client.post("/api/score", json=payload).status_code == 422
+
+
+def test_legacy_batch_boolean_parser():
+    assert _parse_bool("true") is True
+    assert _parse_bool("false") is False
+    assert _parse_bool("0") is False
+    with pytest.raises(ValueError):
+        _parse_bool("maybe")

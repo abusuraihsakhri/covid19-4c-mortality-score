@@ -1,210 +1,135 @@
-# Covid19 4C Mortality Score
+# COVID-19 4C Mortality Score
 
-> **Domain:** Clinical Decision Support & Biomedical Computing  
-> **Reference:** Knight SR et al. BMJ 2020; 370:m3339 (ISARIC 4C Prospective Cohort, n=35,463)
+A reproducible implementation of the ISARIC 4C Mortality Score described by Knight et al. for **adults admitted to hospital with COVID-19**. The repository provides a Python scoring library, CLI, batch CSV processing, FastAPI endpoint, tests, and a dependency-free browser calculator.
 
-<div align="center">
+## Scope
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+The original score uses eight admission variables and ranges from 0 to 21 points:
 
-</div>
+| Variable | Points |
+| --- | --- |
+| Age | <50: 0; 50–59: 2; 60–69: 4; 70–79: 6; ≥80: 7 |
+| Sex in original score | Female: 0; Male: 1 |
+| Comorbidities | 0: 0; 1: 1; ≥2: 2 |
+| Respiratory rate | <20: 0; 20–29: 1; ≥30: 2 |
+| Room-air SpO₂ | ≥92%: 0; <92%: 2 |
+| Glasgow Coma Scale | 15: 0; <15: 2 |
+| Urea | <7 mmol/L: 0; 7–14: 1; >14: 3 |
+| C-reactive protein | <50 mg/L: 0; 50–99: 1; ≥100: 2 |
 
----
+Historical mortality proportions in the 2020 validation cohort were 1.2% for scores 0–3, 9.9% for 4–8, 31.4% for 9–14, and 61.5% for scores ≥15.
 
-## 📖 What It Does
+**Clinical limitation:** these are historical prognostic estimates from the original validation population. This implementation does not infer a treatment, escalation, or disposition decision from the score. Use current clinical guidance and the complete patient context.
 
-ISARIC 4C Mortality Score for COVID-19 Inpatient Severity & Mortality Prognostication.
+Reference: Knight SR, Ho A, Pius R, et al. *BMJ*. 2020;370:m3339. doi:10.1136/bmj.m3339.
 
-Calculates the validated ISARIC 4C Mortality Score (0-21 points) from 8 clinical
-variables at hospital admission to predict in-hospital mortality risk in COVID-19 patients.
+## Browser calculator
 
----
+The static calculator is in `docs/` (with the same interface retained in `web/`). It performs the calculation entirely in the browser with no server-side code and no external JavaScript dependencies.
 
-## ⚙️ Key Capabilities & Algorithmic Modules
+- No patient identifier is requested.
+- Entered clinical values are not transmitted by the static page.
+- The page is responsive and keyboard accessible.
+- Urea can be entered directly in mmol/L or as BUN in mg/dL.
 
-### 🔬 Core Algorithmic & Evaluation Engines
+GitHub Pages deployment is automated from `docs/`. A live application link is added here only after the deployed site has been verified.
 
-- **`VariableScoreBreakdown`**: Breakdown of points awarded for each of the 8 variables.
-- **`FourCMortalityResult`**: Complete 4C Mortality Score evaluation.
-- **`FourCMortalityEngine`**: Computational engine for ISARIC 4C Mortality Score.
+## Python installation
 
-### 8 Clinical Variables Scored
-
-| Variable | Scoring Logic |
-|:---------|:--------------|
-| Age | <50 (0), 50-59 (2), 60-69 (4), 70-79 (6), >=80 (7) |
-| Sex | Female (0), Male (1) |
-| Comorbidities | 0 (0), 1 (1), >=2 (2) |
-| Respiratory Rate | <20 (0), 20-29 (1), >=30 (2) |
-| SpO2 (room air) | >=92% (0), <92% (2) |
-| GCS | 15 (0), <15 (2) |
-| Urea | <7 mmol/L (0), 7-14 (1), >14 (3) |
-| CRP | <50 mg/L (0), 50-99 (1), >=100 (2) |
-
-### Risk Stratification
-
-| Score | Risk Group | Mortality | Recommended Care |
-|:------|:-----------|:----------|:-----------------|
-| 0-3 | Low | 1.2% | Outpatient or general ward |
-| 4-8 | Intermediate | 9.9% | Inpatient ward |
-| 9-14 | High | 31.4% | High acuity stepdown |
-| 15-21 | Very High | 61.5% | ICU critical care |
-
----
-
-## 💻 Installation
+Python 3.10–3.12 is supported.
 
 ```bash
-# Clone the repository
 git clone https://github.com/abusuraihsakhri/covid19-4c-mortality-score.git
 cd covid19-4c-mortality-score
-
-# Install dependencies
-pip install -e .
-
-# Or install with development dependencies
-pip install -e ".[dev]"
+python -m pip install -e .
 ```
 
----
+For development:
 
-## 💻 CLI Quickstart & Usage
-
-### 1. Evaluate a Single Patient
 ```bash
-python covid_4c_score.py eval --patient-id PT-001 --age 65 --sex M --comorbidities 1 --rr 24 --spo2 91 --gcs 15 --urea 8.5 --crp 45.0
+python -m pip install -e ".[dev]"
 ```
 
-### 2. JSON Output
+## CLI
+
+All eight clinical variables are required. Provide either urea or BUN, not both.
+
 ```bash
-python covid_4c_score.py eval --age 72 --sex F --json
+covid19-4c-score eval \
+  --age 65 \
+  --sex M \
+  --comorbidities 1 \
+  --rr 24 \
+  --spo2 90 \
+  --gcs 15 \
+  --urea 8.0 \
+  --crp 120
 ```
 
-### 3. Batch Process CSV File
+JSON output:
+
 ```bash
-python covid_4c_score.py batch -i sample.csv -o results.csv
+covid19-4c-score eval \
+  --age 65 --sex M --comorbidities 1 --rr 24 --spo2 90 \
+  --gcs 15 --urea 8.0 --crp 120 --json
 ```
 
-### 4. Clinical Q&A Chat
+### Batch CSV
+
 ```bash
-python covid_4c_score.py chat "What are the variables?"
+covid19-4c-score batch -i sample.csv -o 4c_results.csv
 ```
 
-### Parameter Reference
-- `--patient-id`: Unique patient identifier
-- `--age`: Age in years (0-150)
-- `--sex`: Biological sex (M/F/Male/Female)
-- `--comorbidities`: Number of major comorbidities (0, 1, 2+)
-- `--rr`: Respiratory Rate (breaths/min, 0-100)
-- `--spo2`: Room air SpO2 (%, 0-100)
-- `--gcs`: Glasgow Coma Scale (3-15)
-- `--urea`: Serum Urea (mmol/L)
-- `--bun`: Blood Urea Nitrogen (mg/dL, alternative to urea)
-- `--crp`: C-Reactive Protein (mg/L)
+Required columns are `age`, `sex`, `comorbidities`, `rr`, `spo2`, `gcs`, `crp`, and exactly one populated value per row from `urea` or `bun`. `patient_id` is optional.
 
-### Input CSV Schema for Batch Processing
+## API
 
-| Field | Description | Requirement |
-|:------|:------------|:------------|
-| `patient_id` | Patient identifier | Required |
-| `age` | Age in years | Required |
-| `sex` | M/F/Male/Female | Required |
-| `comorbidities` | Number of comorbidities | Optional (default: 0) |
-| `rr` | Respiratory rate | Optional (default: 18) |
-| `spo2` | Oxygen saturation | Optional (default: 95.0) |
-| `gcs` | Glasgow Coma Scale | Optional (default: 15) |
-| `urea` | Serum urea (mmol/L) | Optional |
-| `bun` | Blood urea nitrogen (mg/dL) | Optional |
-| `crp` | C-Reactive Protein | Optional (default: 20.0) |
-
----
-
-## 🛡️ Security & Enterprise Architecture
-
-* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
-* **Input Validation:** All clinical parameters validated against clinically plausible ranges.
-* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
-
-### Environment Variables
-
-| Variable | Description | Default |
-|:---------|:------------|:--------|
-| `AUDIT_SECRET_KEY` | Secret key for HMAC-SHA256 audit trail | Development fallback (set in production!) |
-| `MODEL_PROVIDER` | LLM provider for chat (mock/ollama/claude/openai) | mock |
-
----
-
-## 🧪 Testing & Verification
-
-Run the automated test suite:
+Start the FastAPI service locally:
 
 ```bash
-# Run all tests
-python -m unittest test_covid_4c_score -v
-
-# Run with pytest (if installed)
-python -m pytest tests/ -v
-
-# Run specific test class
-python -m unittest test_covid_4c_score.TestInputValidation -v
+python cli.py serve --host 127.0.0.1 --port 8000
 ```
 
-Execute high-throughput batch simulation benchmarks:
+The primary endpoint is:
 
-```bash
-python simulator.py 1000
+```text
+POST /api/score
 ```
 
----
+Interactive API documentation is available from FastAPI at `/docs`, and the generated OpenAPI schema is served at `/openapi.json`.
 
-## 🐳 Container Deployment
+The previous `/api/audit`, `/api/chat`, and `/api/audit/logs` routes remain for backward compatibility. The identifier-screening helper used by those legacy routes is regex-based and is **not** a substitute for formal de-identification or a HIPAA compliance process.
+
+## Verification
 
 ```bash
-# Build and run with Docker
+python -m compileall -q .
+ruff check .
+pytest -q
+python -m build
+pip-audit
+```
+
+CI runs the test suite on Python 3.10, 3.11, and 3.12, plus dependency auditing and package build verification.
+
+## Docker
+
+```bash
 docker build -t covid19-4c-mortality-score .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key covid19-4c-mortality-score
-
-# Or use docker-compose
-AUDIT_SECRET_KEY=your-secret-key docker-compose up
+docker run --rm -p 8000:8000 covid19-4c-mortality-score
 ```
 
----
+For persistent verification of the legacy HMAC audit chain, set a private `AUDIT_SECRET_KEY`. If it is omitted, the process generates an ephemeral key rather than using a fixed default.
 
-## 📁 Project Structure
+## Technology and browser compatibility
 
-```
-covid19-4c-mortality-score/
-├── agents/                 # Multi-agent orchestration system
-│   ├── api.py             # FastAPI REST endpoints
-│   ├── base.py            # Security, PHI guard, audit trail
-│   ├── learning.py        # Bayesian calibration engine
-│   ├── llm_factory.py     # LLM provider factory
-│   ├── metrics.py         # Prometheus metrics
-│   ├── models.py          # Pydantic data models
-│   ├── streamer.py        # WebSocket telemetry
-│   ├── supervisor.py      # Multi-agent supervisor
-│   └── workers.py         # Specialized worker agents
-├── tests/                 # Pytest test suite
-├── web/                   # Operations console (HTML)
-├── cli.py                 # CLI entry point
-├── covid_4c_score.py      # Core scoring engine & CLI
-├── enrichment.py          # Feature enrichment suite
-├── simulator.py           # High-throughput simulation
-├── sample.csv             # Sample patient data
-├── pyproject.toml         # Python project configuration
-├── Dockerfile             # Container build
-├── docker-compose.yml     # Container orchestration
-└── openapi_spec.json      # OpenAPI 3.1 specification
-```
+- Python 3.10–3.12
+- FastAPI and Pydantic v2
+- Standard HTML/CSS/JavaScript for the static calculator
+- GitHub Actions for CI and Pages deployment
 
----
+The static calculator uses standard browser APIs and does not require Python/WebAssembly. Current versions of Chrome, Edge, Firefox, and Safari are expected to work.
 
-## 📄 License
+## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE).
