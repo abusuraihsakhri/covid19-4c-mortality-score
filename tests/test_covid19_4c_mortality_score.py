@@ -77,3 +77,42 @@ def test_audit_trail_detects_tampering_and_returns_copy():
 
     trail.logs[-1]["actor"] = "tampered"
     assert trail.verify_integrity() is False
+
+
+def test_score_api_calculates_complete_case():
+    client = TestClient(app)
+    response = client.post(
+        "/api/score",
+        json={
+            "patient_id": "API-01",
+            "age_years": 65,
+            "sex": "M",
+            "comorbidities_count": 1,
+            "respiratory_rate": 24,
+            "spo2_percent": 90.0,
+            "gcs_score": 15,
+            "urea_mmol_l": 8.0,
+            "crp_mg_l": 120.0,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total_score"] == 12
+    assert body["risk_group"] == "High"
+
+
+def test_score_api_requires_one_urea_source():
+    client = TestClient(app)
+    payload = {
+        "age_years": 65,
+        "sex": "M",
+        "comorbidities_count": 1,
+        "respiratory_rate": 24,
+        "spo2_percent": 90.0,
+        "gcs_score": 15,
+        "crp_mg_l": 120.0,
+    }
+    assert client.post("/api/score", json=payload).status_code == 422
+    payload["urea_mmol_l"] = 8.0
+    payload["bun_mg_dl"] = 20.0
+    assert client.post("/api/score", json=payload).status_code == 422
