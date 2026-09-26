@@ -278,19 +278,19 @@ class FourCMortalityEngine:
         if total_score <= 3:
             risk_group = "Low"
             mortality = 1.2
-            care_level = "OUTPATIENT_OR_WARD"
+            care_level = "NOT_DETERMINED_BY_SCORE"
         elif total_score <= 8:
             risk_group = "Intermediate"
             mortality = 9.9
-            care_level = "INPATIENT_WARD"
+            care_level = "NOT_DETERMINED_BY_SCORE"
         elif total_score <= 14:
             risk_group = "High"
             mortality = 31.4
-            care_level = "HIGH_ACUITY_STEPDOWN"
+            care_level = "NOT_DETERMINED_BY_SCORE"
         else:
             risk_group = "Very High"
             mortality = 61.5
-            care_level = "ICU_CRITICAL_CARE"
+            care_level = "NOT_DETERMINED_BY_SCORE"
 
         recommendation = (
             f"{risk_group} 4C risk stratum in the 2020 validation cohort. "
@@ -409,7 +409,7 @@ def main(argv=None) -> int:
             print(f"  Total Score: {res.total_score} / 21")
             print(f"  Risk Group: {res.risk_group}")
             print(f"  2020 Validation-Cohort Mortality: {res.mortality_rate_percent:.1f}%")
-            print(f"  Study-era Management Stratum: {res.recommended_level_of_care}")
+            print(f"  Care Level: {res.recommended_level_of_care}")
             bd = res.score_breakdown
             print("-" * 80)
             print(
