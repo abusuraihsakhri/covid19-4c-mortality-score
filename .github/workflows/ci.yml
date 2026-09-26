@@ -42,6 +42,11 @@ jobs:
           AUDIT_SECRET_KEY: ci-test-key
         run: pytest -q
 
+      - name: CLI smoke test
+        run: >-
+          covid19-4c-score eval --age 65 --sex M --comorbidities 1
+          --rr 24 --spo2 90 --gcs 15 --urea 8 --crp 120 --json
+
   security-and-build:
     runs-on: ubuntu-latest
     steps:
@@ -63,3 +68,20 @@ jobs:
 
       - name: Build package
         run: python -m build
+
+      - name: Build runtime container
+        run: docker build -t covid19-4c-mortality-score:ci .
+
+      - name: Container health smoke test
+        run: |
+          docker run -d --name fourc-ci -p 8000:8000 \
+            -e AUDIT_SECRET_KEY=ci-test-key covid19-4c-mortality-score:ci
+          trap 'docker rm -f fourc-ci >/dev/null 2>&1 || true' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8000/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs fourc-ci
+          exit 1
